@@ -10,7 +10,7 @@ import React, {useState} from 'react';
 import {ActivityIndicator} from 'react-native-paper';
 import firestore from '@react-native-firebase/firestore';
 import auth from '@react-native-firebase/auth';
-import {useFirebaseUser} from '../../hooks/useFirebaseUser';
+// import {useFirebaseUser} from '../../hooks/useFirebaseUser';
 import { useNavigation } from '@react-navigation/native';
 
 
@@ -20,14 +20,19 @@ const AuthScreen = () => {
   const [password, setPassword] = useState('123456');
   const [userName, setUserName] = useState('Pawan');
   const [loading, setLoading] = useState(false);
-  const firebaseUser = useFirebaseUser().firebaseUser;
-  // console.log(user.firebaseUser);
+  // const firebaseUser = useFirebaseUser().firebaseUser;
+  // console.log(firebaseUser);
   const handleLogin = async () => {
     setLoading(true); // Start loading spinner
-
+    if (!userName) {
+      Alert.alert('Username is required');
+      setLoading(false); // Stop loading spinner
+      return;
+  }
     try {
       await auth().signInWithEmailAndPassword(email, password);
-      console.log(firebaseUser?.uid);
+      // console.log(firebaseUser?.uid);
+      setLoading(false); // Stop loading spinner
       navigation.navigate('chat');
     } catch (error) {
       if (error instanceof Error) {
@@ -37,17 +42,17 @@ const AuthScreen = () => {
         ) {
           try {
             Alert.alert('User not found. Creating a new user...');
-            await auth().createUserWithEmailAndPassword(email, password);
-
+           const credentials = await auth().createUserWithEmailAndPassword(email, password);
+            console.log('User created!' , credentials.user?.uid);
             await firestore()
               .collection('users')
-              .doc(firebaseUser?.uid)
+              .doc(credentials.user?.uid)
               .set({
                 name: userName,
                 email: email,
                 role: password === '123456' ? 'admin' : 'user',
-                // password: password,
-                id: firebaseUser?.uid,
+                
+                id: credentials.user?.uid,
                 secret_code: password,
               })
               .then(() => {
@@ -81,14 +86,20 @@ const AuthScreen = () => {
           placeholder="Enter username"
           placeholderTextColor="#aaa"
           value={userName}
-          onChangeText={setUserName}
+          autoFocus={true}
+          onChangeText={(text) => setUserName(text)}
         />
         <TextInput
           style={styles.input}
           placeholder="Enter email"
           placeholderTextColor="#aaa"
           value={email}
-          onChangeText={setEmail}
+          keyboardType='email-address'
+          autoCapitalize='none'
+          autoFocus={true}
+           secureTextEntry={true}
+           textContentType='emailAddress'
+          onChangeText={(text) => setEmail(text)}
         />
 
         <TextInput
@@ -96,7 +107,11 @@ const AuthScreen = () => {
           placeholder="Enter Secret text"
           placeholderTextColor="#aaa"
           value={password}
-          onChangeText={setPassword}
+          // secureTextEntry={true}
+          autoCapitalize='none'
+          autoFocus={true}
+          textContentType='password'
+          onChangeText={(text) => setPassword(text)}
         />
 
         {loading ? (
