@@ -10,9 +10,8 @@ import React, {useState} from 'react';
 import {ActivityIndicator} from 'react-native-paper';
 import firestore from '@react-native-firebase/firestore';
 import auth from '@react-native-firebase/auth';
-// import {useFirebaseUser} from '../../hooks/useFirebaseUser';
 import { useNavigation } from '@react-navigation/native';
-
+import MaterialCommunityIcons from 'react-native-vector-icons/MaterialCommunityIcons'
 
 const AuthScreen = () => {
   const navigation = useNavigation();
@@ -20,12 +19,16 @@ const AuthScreen = () => {
   const [password, setPassword] = useState('123456');
   const [userName, setUserName] = useState('Pawan');
   const [loading, setLoading] = useState(false);
-  // const firebaseUser = useFirebaseUser().firebaseUser;
-  // console.log(firebaseUser);
+  const [error, setError] = useState('');
+  const [emailError, setEmailError] = useState('');
+  const [passwordError, setPasswordError] = useState('');
+
+  const [passwordVisible, setPasswordVisible] = useState(false);
+  
   const handleLogin = async () => {
     setLoading(true); // Start loading spinner
     if (!userName) {
-      Alert.alert('Username is required');
+      // Alert.alert('Username is required');
       setLoading(false); // Stop loading spinner
       return;
   }
@@ -34,14 +37,19 @@ const AuthScreen = () => {
       // console.log(firebaseUser?.uid);
       setLoading(false); // Stop loading spinner
       navigation.navigate('chat');
+    // eslint-disable-next-line no-catch-shadow
     } catch (error) {
       if (error instanceof Error) {
-        if (
+        if ((error as any).code === 'auth/wrong-password' || (error as any).code === 'auth/invalid-email') {
+          console.log('Incorrect password!');
+          setError('Incorrect email/password!');
+        }
+       else if (
           (error as any).code === 'auth/user-not-found' ||
           (error as any).code === 'auth/invalid-credential'
         ) {
           try {
-            Alert.alert('User not found. Creating a new user...');
+            // Alert.alert('User not found. Creating a new user...');
            const credentials = await auth().createUserWithEmailAndPassword(email, password);
             console.log('User created!' , credentials.user?.uid);
             await firestore()
@@ -51,7 +59,6 @@ const AuthScreen = () => {
                 name: userName,
                 email: email,
                 role: password === '123456' ? 'admin' : 'user',
-                
                 id: credentials.user?.uid,
                 secret_code: password,
               })
@@ -94,31 +101,49 @@ const AuthScreen = () => {
           placeholder="Enter email"
           placeholderTextColor="#aaa"
           value={email}
-          keyboardType='email-address'
-          autoCapitalize='none'
+          keyboardType="email-address"
+          autoCapitalize="none"
           autoFocus={true}
            secureTextEntry={true}
-           textContentType='emailAddress'
+           textContentType="emailAddress"
           onChangeText={(text) => setEmail(text)}
         />
 
+      <View style={styles.passwordContainer}>
         <TextInput
-          style={styles.input}
-          placeholder="Enter Secret text"
-          placeholderTextColor="#aaa"
-          value={password}
-          // secureTextEntry={true}
-          autoCapitalize='none'
-          autoFocus={true}
-          textContentType='password'
-          onChangeText={(text) => setPassword(text)}
+            style={styles.input}
+            placeholder="Enter Secret text"
+            placeholderTextColor="#aaa"
+            value={password}
+            secureTextEntry={!passwordVisible}
+            autoCapitalize="none"
+            autoFocus={true}
+            textContentType="password"
+            onChangeText={(text) => setPassword(text)}
         />
+        <Pressable
+            onPress={() => setPasswordVisible(!passwordVisible)}
+            style={styles.eyeIconContainer}
+        >
+            <MaterialCommunityIcons
+                name={passwordVisible ? 'eye-off' : 'eye'}
+                size={24}
+                color="#808080"
+            />
+        </Pressable>
+    </View>
+    
 
         {loading ? (
-          <ActivityIndicator size="large" color="#000" />
+          <ActivityIndicator size="large" color="#bcc4ff" />
         ) : (
           <Pressable style={styles.button} onPress={handleLogin}>
             <Text style={styles.buttonText}>Login</Text>
+            <MaterialCommunityIcons
+                name="arrow-right"
+                size={24}
+                color="#fff"
+            />
           </Pressable>
         )}
       </View>
@@ -159,12 +184,14 @@ const styles = StyleSheet.create({
     backgroundColor: '#f9f9f9', // Light background for input field
   },
   button: {
-    backgroundColor: 'lightblue', // Blue background color
+    flexDirection: 'row',
+    backgroundColor: '#bcc4ff', // Blue background color
     paddingVertical: 12, // Reduced padding for a smaller button
     paddingHorizontal: 10, // Reduced horizontal padding
     borderRadius: 25, // Slightly smaller border radius for a more compact button
     alignItems: 'center',
     justifyContent: 'center',
+    gap: 10,
     width: '40%', // Button width reduced to 80% of the container
     maxWidth: 200, // Set a maximum width for the button
     marginTop: 10,
@@ -179,6 +206,16 @@ const styles = StyleSheet.create({
     fontSize: 16, // Slightly smaller font size
     fontWeight: 'bold',
   },
+  passwordContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    position: 'relative',
+},
+eyeIconContainer: {
+    position: 'absolute',
+    right: 10,
+    top: 13, // Align the icon vertically within the input field
+},
 });
 
 export default AuthScreen;

@@ -1,12 +1,31 @@
 import React, {useState, useLayoutEffect, useCallback, useEffect} from 'react';
-import {ActivityIndicator, Alert, Button, StyleSheet, Text, TouchableOpacity, View} from 'react-native';
+import {
+  ActivityIndicator,
+  Alert,
+  StyleSheet,
+  Text,
+  TouchableOpacity,
+  View,
+} from 'react-native';
 import auth from '@react-native-firebase/auth';
 import firestore from '@react-native-firebase/firestore';
 // import { AntDesign } from '@expo/vector-icons';
-import {Bubble, Day, GiftedChat, IMessage, InputToolbar, Time} from 'react-native-gifted-chat';
+import {
+  Bubble,
+  Day,
+  GiftedChat,
+  IMessage,
+  InputToolbar,
+  Send,
+  Time,
+} from 'react-native-gifted-chat';
 import {useNavigation} from '@react-navigation/native';
 import {useFirebaseUser} from '../../hooks/useFirebaseUser';
 import {signOut} from '@react-native-firebase/auth';
+import MaterialCommunityIcons from 'react-native-vector-icons/MaterialCommunityIcons'
+import DialogBox from '../../components/Dialog';
+import FontAwesome from 'react-native-vector-icons/FontAwesome';
+
 
 const uuidv4 = () => {
   return 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, c => {
@@ -21,17 +40,60 @@ const ChatScreen = () => {
   const navigation = useNavigation();
   const firebaseUser = useFirebaseUser().firebaseUser;
   const [loading, setLoading] = useState(false);
+  const [signoutLoading, setSignoutLoading] = useState(false);
   const [isAdmin, setIsAdmin] = useState(false);
   const [userName, setUserName] = useState('');
+  const [dialogVisible, setDialogVisible] = useState(false);
+  const [selectedMessageId, setSelectedMessageId] = useState<string | undefined>(undefined);
 
   const onSignOut = async () => {
     setLoading(true);
-    await signOut(auth()).catch(error => Alert.alert(error.message));
-    console.log('sign out');
-    setLoading(false);
-    navigation.navigate('auth');
-
+    try {
+      await signOut(auth()).catch(error => Alert.alert(error.message));
+      console.log('sign out');
+      navigation.navigate('auth');
+    } catch (error) {
+      console.error(error);
+    } finally {
+      setLoading(false);
+    }
   };
+
+  useEffect(() => {
+    navigation.setOptions({
+      // eslint-disable-next-line react/no-unstable-nested-components
+      headerTitle: () => (
+        <View>
+          <Text
+            style={{
+              color: '#fff',
+              fontSize: 20,
+              fontWeight: 'bold',
+            }}>
+            Chat Screen
+          </Text>
+        </View>
+      ),
+      // eslint-disable-next-line react/no-unstable-nested-components
+      headerRight: () =>
+        signoutLoading ? (
+          <ActivityIndicator size="small" color="#fff" />
+        ) : (
+          <TouchableOpacity onPress={onSignOut}>
+           <MaterialCommunityIcons
+                name="logout"
+                size={28}
+                color="white"
+            />
+          </TouchableOpacity>
+        ),
+      headerStyle: {
+        backgroundColor: '#bcc4ff',
+        
+      },
+      headerTintColor: '#fff',
+    });
+  }, [signoutLoading]);
 
   useEffect(() => {
     const fetchUserRole = async () => {
@@ -57,35 +119,23 @@ const ChatScreen = () => {
     fetchUserRole();
   }, [firebaseUser]);
 
-  useLayoutEffect(() => {
-    navigation.setOptions({
-      // eslint-disable-next-line react/no-unstable-nested-components
-      headerTitle: () => <HeaderTitle />,
-      headerRight: () => <HeaderRight loading={loading} onSignOut={onSignOut} />,
-      headerStyle: {
-        backgroundColor: '#fe5f55',
-      },
-      headerTintColor: '#fff',
-    });
-  }, [loading]);
 
 
-  const HeaderTitle = () => (
-    <View style={styles.headerContainer}>
-      <Text style={styles.headerTitle}>Chat Screen</Text>
-    </View>
-  );
+  const showDialog = (messageId: string) => {
+    setSelectedMessageId(messageId);
+    setDialogVisible(true);
+  };
 
-  const HeaderRight = ({ loading, onSignOut }) => (
-    loading ? (
-      <ActivityIndicator size="small" color="#fff" />
-    ) : (
-      <TouchableOpacity onPress={onSignOut} style={styles.button}>
-        <Text style={styles.buttonText}>Sign Out</Text>
-      </TouchableOpacity>
-    )
-  );
+  const hideDialog = () => {
+    setDialogVisible(false);
+    setSelectedMessageId(undefined);
+  };
 
+  // const onLongPress = (context, message) => {
+  //   if (isAdmin) {
+  //     showDialog(message._id);
+  //   }
+  // };
 
 
   useLayoutEffect(() => {
@@ -141,7 +191,6 @@ const ChatScreen = () => {
     [groupId, isAdmin],
   );
 
-  
   // const renderInputToolbar = props => {
   //   // console.log('InputToolbar props:', props);
   //   if (isAdmin) {
@@ -164,8 +213,6 @@ const ChatScreen = () => {
   // };
 
   // eslint-disable-next-line react/no-unstable-nested-components
-  
-  // eslint-disable-next-line react/no-unstable-nested-components
   const CustomBubble = props => {
     return (
       <Bubble
@@ -179,25 +226,20 @@ const ChatScreen = () => {
           left: styles.leftBubbleText,
           right: styles.rightBubbleText,
         }}
-        renderTime={(props) => <CustomTime {...props} />}
+        renderTime={props => <CustomTime {...props} />}
       />
     );
   };
 
   // eslint-disable-next-line react/no-unstable-nested-components
-  const CustomDay = (props) => {
+  const CustomDay = props => {
     return (
-      <Day
-        {...props}
-        dateFormat="MMM DD YYYY"
-        textStyle={styles.dayText}
-      />
+      <Day {...props} dateFormat="MMM DD YYYY" textStyle={styles.dayText} />
     );
-
   };
-  
+
   // eslint-disable-next-line react/no-unstable-nested-components
-  const CustomTime = (props) => {
+  const CustomTime = props => {
     return (
       <Time
         {...props}
@@ -209,54 +251,72 @@ const ChatScreen = () => {
     );
   };
 
-  
-
   return loading ? (
     <ActivityIndicator size="large" color="#000" />
   ) : (
-    <GiftedChat
+    <View style={{ flex: 1 }}>
+      <GiftedChat
       messages={messages}
-      alwaysShowSend
-      onLongPress={(context, message) => {
-        console.log('message', message);
-        console.log('context', context);
-
-        if (message.user._id === firebaseUser?.uid || isAdmin) {
-          Alert.alert('Delete message?', 'Are you sure you want to delete this message?', [
-            {
-              text: 'Cancel',
-              style: 'cancel',
-            },
-            {
-              text: 'Delete',
-              onPress: async () => {
-                await firestore()
-                  .collection('groups')
-                  .doc(groupId)
-                  .collection('messages')
-                  .doc(message._id)
-                  .delete();
-              },
-            },
-          ]);
-        }
+       alwaysShowSend={true}
+       onLongPress={(context, message)=> {
+  
+      if (message.user._id === firebaseUser?.uid || isAdmin) {
+        showDialog(message._id);
       }
-
-      }
-      messagesContainerStyle = {{backgroundColor: '#F6FBFF'}}
+    }
+  }
+      messagesContainerStyle={{backgroundColor: '#f6f5f1'}}
       renderUsernameOnMessage={true}
       renderBubble={props => <CustomBubble {...props} />}
-      renderDay={(props) => <CustomDay {...props} />}
-      renderInputToolbar={props => 
-        isAdmin ? <InputToolbar {...props} /> : <Text style={{ padding: 10, textAlign: 'center' }}>Only admins can send messages</Text>
+      renderDay={props => <CustomDay {...props} />}
+      renderInputToolbar={props =>
+        isAdmin ? (
+          <InputToolbar {...props} 
+          // eslint-disable-next-line react-native/no-inline-styles
+          containerStyle={{
+          borderWidth:2,
+          borderTopWidth:2,
+          borderColor: '#bcc4ff',
+          borderTopEndRadius: 15,
+          borderTopStartRadius: 15,
+          // padding: 5,
+          paddingVertical:7,
+          }}
+           renderSend={() => {
+            return <  Send {...props} containerStyle={
+               // eslint-disable-next-line react-native/no-inline-styles
+               {
+                 justifyContent: 'center',
+                 alignItems: 'center',
+                 marginRight: 15,
+                 marginBottom: 5,
+               }}> 
+               <FontAwesome name="send" size={24} color="#007bff" />
+                </Send>;
+                }
+              }
+          />
+        ) : (
+          <Text style={{padding: 10, textAlign: 'center'}}>
+            Only admins can send messages
+          </Text>
+        )
       }
       onSend={messages => onSend(messages)}
-      // renderSend={(props) => <CustomSendButton {...props} />}
+    //   renderSend={(props) => 
+    // }
       user={{
         _id: firebaseUser?.uid,
         name: firebaseUser?.displayName || userName,
       }}
     />
+     <DialogBox
+        message_id={selectedMessageId}
+        visible={dialogVisible}
+        showDialog={showDialog}
+        hideDialog={hideDialog}
+      />
+    </View>
   );
 };
 
@@ -267,7 +327,7 @@ const styles = StyleSheet.create({
     fontWeight: 'bold',
     backgroundColor: '#e0e0e0',
     padding: 5,
-    paddingHorizontal:10,
+    paddingHorizontal: 10,
     borderRadius: 10,
     marginBottom: 10,
   },
@@ -280,12 +340,12 @@ const styles = StyleSheet.create({
     fontSize: 12,
   },
   leftBubble: {
-    backgroundColor: 'lightgrey',
+    backgroundColor: '#f5efd9',
     borderRadius: 15,
     padding: 5,
   },
   rightBubble: {
-    backgroundColor: 'lightblue',
+    backgroundColor: '#bcc4ff',
     borderRadius: 15,
     padding: 5,
   },
@@ -295,19 +355,12 @@ const styles = StyleSheet.create({
   rightBubbleText: {
     color: '#000',
   },
-  button: {
-    marginRight: 10,
-    paddingVertical: 5,
-    paddingHorizontal: 10,
-    backgroundColor: '#f4511e',
-    borderRadius: 5,
-  },
+
   buttonText: {
     color: '#fff',
     fontSize: 16,
     fontWeight: 'bold',
   },
 });
-
 
 export default ChatScreen;
