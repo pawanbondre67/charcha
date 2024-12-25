@@ -137,7 +137,7 @@ const RegisterScreen = () => {
               value={password}
               secureTextEntry={!passwordVisible}
               autoCapitalize="none"
-              autoFocus={true}
+              
               textContentType="password"
               onChangeText={text => setPassword(text)}
             />
