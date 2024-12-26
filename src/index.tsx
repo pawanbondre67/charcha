@@ -22,7 +22,7 @@ const RootStack = () => {
     <NavigationContainer>
 
         <Stack.Navigator
-            initialRouteName= {firebaseUser ? 'chat' : 'login'}
+            initialRouteName= { firebaseUser ? 'chat' : 'login'}
             // initialRouteName='chat'
          >
             <Stack.Screen name="chat" options={{title :'Charcha'}} component={ChatScreen} />
