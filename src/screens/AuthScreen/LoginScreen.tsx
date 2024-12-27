@@ -56,7 +56,7 @@ const LoginScreen = () => {
       try {
         await auth().signInWithEmailAndPassword(email, password);
         setLoading(false); // Stop loading spinner
-        navigation.navigate('chat');
+        navigation.replace('chat');
       } catch (error) {
         if(error instanceof Error){
             if ((error as any).code === 'auth/invalid-credential') {

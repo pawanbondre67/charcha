@@ -25,7 +25,7 @@ const RootStack = () => {
             initialRouteName= { firebaseUser ? 'chat' : 'login'}
             // initialRouteName='chat'
          >
-            <Stack.Screen name="chat" options={{title :'Charcha'}} component={ChatScreen} />
+            <Stack.Screen name="chat" options={{headerShown:false}} component={ChatScreen} />
             <Stack.Screen name="login" options={{headerShown:false}} component={LoginScreen} />
             <Stack.Screen name="register" options={{headerShown:false}} component={RegisterScreen} />
             {/* <Stack.Screen name="auth"

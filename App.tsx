@@ -1,9 +1,9 @@
 
-import React from 'react'
+import React from 'react';
 import { PaperProvider } from 'react-native-paper';
-import { SafeAreaProvider } from 'react-native-safe-area-context'
-import { SafeAreaView } from 'react-native-safe-area-context'
-import { GestureHandlerRootView } from 'react-native-gesture-handler'
+import { SafeAreaProvider } from 'react-native-safe-area-context';
+import { SafeAreaView } from 'react-native-safe-area-context';
+import { GestureHandlerRootView } from 'react-native-gesture-handler';
 import { StyleSheet } from 'react-native';
 import RootStack from './src';
 
@@ -12,19 +12,19 @@ const App = () => {
     <PaperProvider>
       <SafeAreaProvider>
       <SafeAreaView style={styles.backgroundStyle}>
-        <GestureHandlerRootView style={{ flex: 1 }}>
+        <GestureHandlerRootView >
           <RootStack />
         </GestureHandlerRootView>
       </SafeAreaView>
       </SafeAreaProvider>
 
     </PaperProvider>
-  )
-}
+  );
+};
 const styles = StyleSheet.create({
   backgroundStyle: {
-    flex: 1
+    flex: 1,
   },
-})
+});
 
-export default App
+export default App;

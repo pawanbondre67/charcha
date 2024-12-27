@@ -1,104 +1,85 @@
+
 import React from 'react';
-import { View, Image, StyleSheet, Animated } from 'react-native';
-import {
-  GestureHandlerRootView,
-  Swipeable,
-} from 'react-native-gesture-handler';
-import { IMessage, Message, MessageProps } from 'react-native-gifted-chat';
-import { isSameDay, isSameUser } from 'react-native-gifted-chat/lib/utils';
+import { Pressable, StyleSheet, View } from 'react-native';
+import { IMessage,Message,MessageProps } from 'react-native-gifted-chat';
+import MaterialCommunityIcons from 'react-native-vector-icons/MaterialCommunityIcons';
 
-type ChatMessageBoxProps = {
-  setReplyOnSwipeOpen: (message: IMessage) => void;
-  updateRowRef: (ref: any) => void;
-} & MessageProps<IMessage>;
+import ReanimatedSwipeable from 'react-native-gesture-handler/ReanimatedSwipeable';
+import Reanimated, { SharedValue } from 'react-native-reanimated';
 
-const ChatMessageBox = ({
-  setReplyOnSwipeOpen,
-  updateRowRef,
-  ...props
-}: ChatMessageBoxProps) => {
-  const isNextMyMessage =
-    props.currentMessage &&
-    props.nextMessage &&
-    isSameUser(props.currentMessage, props.nextMessage) &&
-    isSameDay(props.currentMessage, props.nextMessage);
+import { isSameDay,isSameUser } from 'react-native-gifted-chat';
 
-  const renderRightAction = (
-    progressAnimatedValue: Animated.AnimatedInterpolation<any>,
-  ) => {
-    const size = progressAnimatedValue.interpolate({
-      inputRange: [0, 1, 100],
-      outputRange: [0, 1, 1],
-    });
-    const trans = progressAnimatedValue.interpolate({
-      inputRange: [0, 1, 2],
-      outputRange: [0, -12, -20],
-    });
+type ChatMessageboxProps = {
+  setReplyOnSwipeOpen : (message : IMessage) => void;
+  updateRowRef : (ref : any) => void;
+  } & MessageProps<IMessage>;
 
+const ChatMessagebox = ({setReplyOnSwipeOpen, updateRowRef, ...props } : ChatMessageboxProps) => {
+
+  const isNextMyMessage = props.currentMessage &&
+  props.nextMessage &&
+  isSameUser(props.currentMessage, props.nextMessage) &&
+  isSameDay(props.currentMessage, props.nextMessage);
+
+
+  const renderRightAction = ( prog: SharedValue<number>) =>{
+    // const scale = interpolate(prog.value, [0, 1 , 100], [0, 1 ,1]);
+    // const transX = interpolate(prog.value, [0, 1 ,2], [0, -12,-20]);
+    // {transform: [{scale : scale} , {translateX : transX}]} , {borderWidth:1}
     return (
-      <Animated.View
-        style={[
-          styles.container,
-          { transform: [{ scale: size }, { translateX: trans }] },
-          isNextMyMessage
-            ? styles.defaultBottomOffset
-            : styles.bottomOffsetNext,
-          props.position === 'right' && styles.leftOffsetValue,
-        ]}
-      >
-        <View style={styles.replyImageWrapper}>
-          {/* <Image
-            style={styles.replyImage}
-            source={require('../../../assets/icons/reply.png')}
-          /> */}
-        </View>
-      </Animated.View>
+     <Reanimated.View 
+     style={[styles.container , 
+          isNextMyMessage 
+          ? styles.defaultBottomOffset
+          : styles.defaultOffsetNext,
+          props.position  === 'right' && styles.leftOffsetValue,
+     ]}>
+       <View style={styles.replyContainer}>
+        <Pressable onPress={() => console.log('delete')}>
+          <MaterialCommunityIcons name="reply" size={28} color="darkgrey" />
+        </Pressable>
+      </View>
+     </Reanimated.View>
     );
   };
 
-  const onSwipeOpenAction = () => {
-    if (props.currentMessage) {
-      setReplyOnSwipeOpen({ ...props.currentMessage });
+  const onSwipeOpenAction =()=>{
+    console.log('swipe open');
+    if(props.currentMessage){
+      setReplyOnSwipeOpen({...props.currentMessage});
     }
-  };
+  }
+  return  (
+  <ReanimatedSwipeable
+  ref={updateRowRef}
+  friction={2}
+  leftThreshold={40}
+  renderRightActions={renderRightAction}
+  onSwipeableOpen={onSwipeOpenAction}
+  >
 
-  return (
-    <GestureHandlerRootView>
-      <Swipeable
-        ref={updateRowRef}
-        friction={2}
-        rightThreshold={40}
-        renderRightActions={renderRightAction}
-        onSwipeableOpen={onSwipeOpenAction}
-      >
-        <Message {...props} />
-      </Swipeable>
-    </GestureHandlerRootView>
-  );
+    <Message {...props} />
+  </ReanimatedSwipeable>);
 };
 
-const styles = StyleSheet.create({
-  container: {
+const styles= StyleSheet.create({
+  container:{
     width: 40,
   },
-  replyImageWrapper: {
-    flex: 1,
+  replyContainer:{
+    flex:1,
     justifyContent: 'center',
     alignItems: 'center',
   },
-  replyImage: {
-    width: 20,
-    height: 20,
-  },
-  defaultBottomOffset: {
-    marginBottom: 2,
-  },
-  bottomOffsetNext: {
+  defaultOffsetNext:{
     marginBottom: 10,
   },
-  leftOffsetValue: {
+  defaultBottomOffset:{
+    marginBottom: 2,
+  },
+  leftOffsetValue:{
     marginLeft: 16,
   },
-});
+})
 
-export default ChatMessageBox;
+export default ChatMessagebox;

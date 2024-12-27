@@ -1,14 +1,12 @@
-import React, {useState, useLayoutEffect, useCallback, useEffect} from 'react';
+import React, {useState, useLayoutEffect, useCallback, useEffect, useRef} from 'react';
 import {
   ActivityIndicator,
-  Alert,
+  Animated,
   Pressable,
   StyleSheet,
   Text,
-  TouchableOpacity,
   View,
 } from 'react-native';
-import auth from '@react-native-firebase/auth';
 import firestore from '@react-native-firebase/firestore';
 // import { AntDesign } from '@expo/vector-icons';
 import {
@@ -17,18 +15,23 @@ import {
   GiftedChat,
   IMessage,
   InputToolbar,
+  MessageProps,
   Send,
 
   Time,
 } from 'react-native-gifted-chat';
-import {useNavigation} from '@react-navigation/native';
+
 import {useFirebaseUser} from '../../hooks/useFirebaseUser';
 import MaterialCommunityIcons from 'react-native-vector-icons/MaterialCommunityIcons';
 import DialogBox from '../../components/Dialog';
 import {Provider} from 'react-native-paper';
 import FontAwesome from 'react-native-vector-icons/FontAwesome';
-import {CameraOptions, launchCamera} from 'react-native-image-picker';
-import DocumentPicker from 'react-native-document-picker';
+
+import Header from '../../components/Header';
+import { useNavigation } from '@react-navigation/native';
+import CustomActions from '../../components/CustomActions';
+import ReplyMessageBar from '../../components/ReplyMessageBar';
+import ChatMessagebox from '../../components/ChatMessageBox';
 const uuidv4 = () => {
   return 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, c => {
     const r = Math.floor(Math.random() * 16);
@@ -39,10 +42,11 @@ const uuidv4 = () => {
 
 const ChatScreen = () => {
   const groupId = '1234567';
-  const navigation = useNavigation();
+ 
   const firebaseUser = useFirebaseUser().firebaseUser;
+  const navigation = useNavigation();
   const [loading, setLoading] = useState(false);
-  const [signoutLoading, setSignoutLoading] = useState(false);
+ 
   const [isAdmin, setIsAdmin] = useState(false);
   const [userName, setUserName] = useState('');
   const [dialogVisible, setDialogVisible] = useState(false);
@@ -51,56 +55,44 @@ const ChatScreen = () => {
   >(null);
   const [messages, setMessages] = useState<IMessage[]>([]);
   const [showActions, setShowActions] = useState(false);
+  const [replyMessage, setReplyMessage] = useState<IMessage | null>(null);
+  const animation = useRef(new Animated.Value(0)).current;
 
-
-  // console.log('outside' ,isAdmin);
-
-  const onSignOut = async () => {
-    console.log('Sign-out button clicked');
-    setSignoutLoading(true);
-    try {
-      await auth().signOut();
-      console.log('User signed out!');
-      navigation.replace('login');
-    } catch (error) {
-      console.error(error + 'Error signing out');
-      Alert.alert(error.message);
-    } finally {
-      setSignoutLoading(false);
-    }
+const clearReplyMessage = () => {
+    setReplyMessage(null);
   };
 
-  useEffect(() => {
-    navigation.setOptions({
-      // eslint-disable-next-line react/no-unstable-nested-components
-      headerTitle: () => (
-        <View>
-          <Text
-            // eslint-disable-next-line react-native/no-inline-styles
-            style={{
-              color: '#fff',
-              fontSize: 20,
-              fontWeight: 'bold',
-            }}>
-            Chat Screen
-          </Text>
-        </View>
-      ),
-      // eslint-disable-next-line react/no-unstable-nested-components
-      headerRight: () =>
-        signoutLoading ? (
-          <ActivityIndicator size="small" color="#fff" />
-        ) : (
-          <TouchableOpacity onPress={onSignOut}>
-            <MaterialCommunityIcons name="logout" size={28} color="white" />
-          </TouchableOpacity>
-        ),
-      headerStyle: {
-        backgroundColor: '#bcc4ff',
-      },
-      headerTintColor: '#fff',
-    });
-  }, [signoutLoading]);
+  // useEffect(() => {
+  //   navigation.setOptions({
+  //     // eslint-disable-next-line react/no-unstable-nested-components
+  //     headerTitle: () => (
+  //       <View>
+  //         <Text
+  //           // eslint-disable-next-line react-native/no-inline-styles
+  //           style={{
+  //             color: '#fff',
+  //             fontSize: 20,
+  //             fontWeight: 'bold',
+  //           }}>
+  //           Chat Screen
+  //         </Text>
+  //       </View>
+  //     ),
+  //     // eslint-disable-next-line react/no-unstable-nested-components
+  //     headerRight: () =>
+  //       signoutLoading ? (
+  //         <ActivityIndicator size="small" color="#fff" />
+  //       ) : (
+  //         <TouchableOpacity onPress={onSignOut}>
+  //           <MaterialCommunityIcons name="logout" size={28} color="white" />
+  //         </TouchableOpacity>
+  //       ),
+  //     headerStyle: {
+  //       backgroundColor: '#bcc4ff',
+  //     },
+  //     headerTintColor: '#fff',
+  //   });
+  // }, [signoutLoading]);
 
   useEffect(() => {
     if (!firebaseUser) return;
@@ -132,15 +124,14 @@ const ChatScreen = () => {
     setSelectedMessageId(messageId);
     setDialogVisible(true);
   };
-
   const hideDialog = () => {
     setDialogVisible(false);
     setSelectedMessageId(null);
   };
 
   useLayoutEffect(() => {
-    // console.log('firebaseUser', firebaseUser?.uid);
-    console.log("isAdmin updated to at before setmessahes layouteffect:", isAdmin);
+
+    // console.log('user is undefined:', firebaseUser);
     // if (firebaseUser === undefined) {
     //   navigation.navigate('login');
     // }
@@ -179,14 +170,14 @@ const ChatScreen = () => {
         });
 
         setMessages(messagesFirestore);
-        console.log("isAdmin updated to aftersetting messages to  layouteffect:", isAdmin);
+        
       });
     return () => unsubscribe();
-  }, [groupId , isAdmin]);
+  }, [ firebaseUser]);
 
   const onSend = useCallback(
     (messages: IMessage[] = []) => {
-      console.log("Admin status during send:", isAdmin);
+      // console.log("Admin status during send:", isAdmin);
       setMessages(newMessages => GiftedChat.append(newMessages, messages));
       const {text, createdAt, user} = messages[0];
       console.log('user', createdAt);
@@ -201,33 +192,26 @@ const ChatScreen = () => {
           user,
           seenBy: [],
         });
-        console.log("isAdmin updated to:", isAdmin);
+        // console.log("isAdmin updated to:", isAdmin);
     },
-    [groupId, isAdmin],
+    [groupId],
   );
 
-
-  // onLongPress={(context, message) => {
-  //   console.log('message  is  pressed', message);
-  //   if (message.user._id === firebaseUser?.uid || isAdmin) {
-  //     showDialog(message._id);
-  //   }
-  // }}
   // eslint-disable-next-line react/no-unstable-nested-components
-  const CustomBubble = props => {
+  const CustomBubble = (props ) => {
     
     return (
       <Bubble
         {...props}
 
-        onPress={() => {console.log('bubble is long pressed',props.currentMessage._id);
-      //  console.log('firebaseUser',firebaseUser?.uid);
-       console.log(isAdmin);
+        onLongPress={() => {console.log('bubble is long pressed',props.currentMessage._id);
+
+
         if (isAdmin) {
                showDialog(props.currentMessage._id);
              }
             }}
-       
+      
         wrapperStyle={{
           left: styles.leftBubble,
           right: styles.rightBubble,
@@ -261,73 +245,24 @@ const ChatScreen = () => {
       />
     );
   };
-  // const [open, setOpen] = useState(false);
-  // const onStateChange = ({ open }) => setOpen(open);
-  // eslint-disable-next-line react/no-unstable-nested-components
-  const CustomActions = () => {
 
-
-    const handlePress = async (action: string) => {
-      console.log(`Pressed ${action}`);
-      switch (action) {
-        case 'camera':
-          const cameraOptions: CameraOptions = {
-            mediaType: 'photo',
-            cameraType: 'front',
-            saveToPhotos: true,
-            presentationStyle: 'fullScreen',
-          };
-          launchCamera(cameraOptions, response => {
-            if (response.didCancel) {
-              console.log('User cancelled image picker');
-            } else if (response.errorMessage) {
-              console.log('ImagePicker Error: ', response.errorMessage);
-            } else {
-              const source = {uri: response.assets[0].uri};
-              onSend([{image: source.uri}]);
-            }
-          });
-          break;
-        case 'file':
-          try {
-            const res = await DocumentPicker.pick({
-              type: [DocumentPicker.types.allFiles],
-            });
-            console.log('File selected: ', res);
-            onSend([{file: res.uri}]);
-          } catch (err) {
-            if (DocumentPicker.isCancel(err)) {
-              console.log('User cancelled file picker');
-            } else {
-              throw err;
-            }
-          }
-          break;
-        default:
-          break;
-      }
-    };
-
-    return (
-      <View style={styles.container}>
-        <TouchableOpacity
-          style={styles.button}
-          onPress={() => handlePress('camera')}>
-          <MaterialCommunityIcons name="camera" size={24} color="#007bff" />
-        </TouchableOpacity>
-        <TouchableOpacity
-          style={styles.button}
-          onPress={() => handlePress('file')}>
-          <MaterialCommunityIcons name="file" size={24} color="#007bff" />
-        </TouchableOpacity>
-        <TouchableOpacity
-          style={styles.button}
-          onPress={() => handlePress('microphone')}>
-          <MaterialCommunityIcons name="microphone" size={24} color="#007bff" />
-        </TouchableOpacity>
-      </View>
-    );
+  const toggleActions = () => {
+    setShowActions(!showActions);
+    Animated.timing(animation, {
+      toValue: showActions ? 0 : 1,
+      duration: 300,
+      useNativeDriver: false,
+    }).start();
   };
+
+  const actionsWidth = animation.interpolate({
+    inputRange: [0, 1],
+    outputRange: [0, 70], // Adjust this value based on your CustomActions height
+  });
+
+  const renderMessageBox = (props : MessageProps<IMessage>) => (
+    <ChatMessagebox {...props} setReplyOnSwipeOpen={setReplyMessage} />
+  );
 
 
 
@@ -336,11 +271,12 @@ const ChatScreen = () => {
   ) : (
     <Provider>
       <View style={{flex: 1}}>
+        <Header />
         <GiftedChat
           messages={messages}
           alwaysShowSend={true}
-
-          messagesContainerStyle={{backgroundColor: '#f6f5f1'}}
+          onPress={(_,message) => setReplyMessage(message)}
+          messagesContainerStyle={{backgroundColor: '#f6f5f1', flex: 1}}
           renderUsernameOnMessage={true}
           renderBubble={props => <CustomBubble {...props} />}
           renderDay={props => <CustomDay {...props} />}
@@ -357,16 +293,19 @@ const ChatScreen = () => {
                   borderTopStartRadius: 15,
                   justifyContent: 'center',
                   alignItems: 'center',
-                  // backgroundColor: 'red',
-                  paddingVertical: 7,
+                  width: '100%',
+                  // backgroundColor: 'darkgreen',
+                  // position:"relative",
+                  flexDirection:'column-reverse',
+                  padding: 5,
                 }}
-
+                accessoryStyle={{height:'auto'}}
                 renderActions={() =>
-                  // <CustomActions {...props} />
+
                   (
-                 <View style={{ flexDirection: 'row', alignItems: 'center' }}>
+                 <View style={{ flexDirection: 'row', alignItems: 'center', }}>
               <Pressable
-               onPress={() => setShowActions(!showActions)}
+               onPress={() => toggleActions() }
               style={{
                 height: 44,
                 justifyContent: 'center',
@@ -377,7 +316,9 @@ const ChatScreen = () => {
                 <MaterialCommunityIcons
                   name="plus" size={28} color="#bcc4ff" />
               </Pressable>
-              {showActions && <CustomActions {...props} onSend={onSend} />}
+              <Animated.View style={[ { width: actionsWidth }]}>
+              {showActions && <CustomActions onSend={onSend} />}
+              </Animated.View>
             </View>
                   )
                 }
@@ -420,11 +361,15 @@ const ChatScreen = () => {
 
           onSend={messages => onSend(messages)}
 
+          renderAccessory={() => replyMessage && ( <ReplyMessageBar clearReply={clearReplyMessage} message={replyMessage} />)}
+           renderMessage={renderMessageBox}
           user={{
             _id: firebaseUser?.uid,
             name: firebaseUser?.displayName || userName,
           }}
         />
+
+
         <DialogBox
           message_id={selectedMessageId}
           visible={dialogVisible}
