@@ -55,7 +55,7 @@ const styles = StyleSheet.create({
         backgroundColor: 'lightblue',
         borderRadius: 10,
         marginBottom: 10,
-        height: 50,
+        height: 40,
     },
     userContainer:{
         flexDirection: 'row',
