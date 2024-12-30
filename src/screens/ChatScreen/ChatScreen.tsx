@@ -1,4 +1,10 @@
-import React, {useState, useLayoutEffect, useCallback, useEffect, useRef} from 'react';
+import React, {
+  useState,
+  useLayoutEffect,
+  useCallback,
+  useEffect,
+  useRef,
+} from 'react';
 import {
   ActivityIndicator,
   Animated,
@@ -11,13 +17,13 @@ import firestore from '@react-native-firebase/firestore';
 // import { AntDesign } from '@expo/vector-icons';
 import {
   Bubble,
+  BubbleProps,
   Day,
   GiftedChat,
   IMessage,
   InputToolbar,
   MessageProps,
   Send,
-
   Time,
 } from 'react-native-gifted-chat';
 
@@ -28,10 +34,12 @@ import {Provider} from 'react-native-paper';
 import FontAwesome from 'react-native-vector-icons/FontAwesome';
 
 import Header from '../../components/Header';
-import { useNavigation } from '@react-navigation/native';
+import {useNavigation} from '@react-navigation/native';
 import CustomActions from '../../components/CustomActions';
 import ReplyMessageBar from '../../components/ReplyMessageBar';
 import ChatMessagebox from '../../components/ChatMessageBox';
+import Swipeable from 'react-native-gesture-handler/Swipeable';
+
 const uuidv4 = () => {
   return 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, c => {
     const r = Math.floor(Math.random() * 16);
@@ -40,25 +48,32 @@ const uuidv4 = () => {
   });
 };
 
+type MyMessage = IMessage & {
+  replyMessage?: {
+    text: string;
+  };
+};
+
 const ChatScreen = () => {
   const groupId = '1234567';
- 
+
   const firebaseUser = useFirebaseUser().firebaseUser;
   const navigation = useNavigation();
   const [loading, setLoading] = useState(false);
- 
+
   const [isAdmin, setIsAdmin] = useState(false);
   const [userName, setUserName] = useState('');
   const [dialogVisible, setDialogVisible] = useState(false);
   const [selectedMessageId, setSelectedMessageId] = useState<
     string | number | null
   >(null);
-  const [messages, setMessages] = useState<IMessage[]>([]);
+  const [messages, setMessages] = useState<MyMessage[]>([]);
   const [showActions, setShowActions] = useState(false);
-  const [replyMessage, setReplyMessage] = useState<IMessage | null>(null);
+  const [replyMessage, setReplyMessage] = useState<MyMessage | null>(null);
   const animation = useRef(new Animated.Value(0)).current;
+  const swipeableRowRef = useRef<Swipeable | null>(null);
 
-const clearReplyMessage = () => {
+  const clearReplyMessage = () => {
     setReplyMessage(null);
   };
 
@@ -95,7 +110,9 @@ const clearReplyMessage = () => {
   // }, [signoutLoading]);
 
   useEffect(() => {
-    if (!firebaseUser) return;
+    if (!firebaseUser) {
+      return;
+    }
     const fetchUserRole = async () => {
       setLoading(true);
       console.log('firebaseUser', firebaseUser?.uid);
@@ -130,7 +147,6 @@ const clearReplyMessage = () => {
   };
 
   useLayoutEffect(() => {
-
     // console.log('user is undefined:', firebaseUser);
     // if (firebaseUser === undefined) {
     //   navigation.navigate('login');
@@ -142,7 +158,7 @@ const clearReplyMessage = () => {
       .orderBy('createdAt', 'desc')
       .onSnapshot(querySnapshot => {
         const messagesFirestore = querySnapshot.docs.map(doc => {
-          const data: IMessage = {
+          const data: MyMessage = {
             _id: doc.id,
             createdAt: new Date(doc.data().createdAt.seconds * 1000),
             text: doc.data().text,
@@ -170,14 +186,17 @@ const clearReplyMessage = () => {
         });
 
         setMessages(messagesFirestore);
-        
       });
     return () => unsubscribe();
-  }, [ firebaseUser]);
+  }, [firebaseUser]);
 
   const onSend = useCallback(
-    (messages: IMessage[] = []) => {
-      // console.log("Admin status during send:", isAdmin);
+    (messages: MyMessage[] = []) => {
+      if (replyMessage) {
+        messages[0].replyMessage = {
+          text: replyMessage.text,
+        };
+      }
       setMessages(newMessages => GiftedChat.append(newMessages, messages));
       const {text, createdAt, user} = messages[0];
       console.log('user', createdAt);
@@ -192,37 +211,39 @@ const clearReplyMessage = () => {
           user,
           seenBy: [],
         });
-        // console.log("isAdmin updated to:", isAdmin);
+      // console.log("isAdmin updated to:", isAdmin);
+      setReplyMessage(null);
     },
-    [groupId],
+    [replyMessage],
   );
 
   // eslint-disable-next-line react/no-unstable-nested-components
-  const CustomBubble = (props ) => {
-    
+  const CustomBubble = props => {
     return (
-      <Bubble
-        {...props}
+      <View>
+        {/* {renderReplyMessageView(props)} */}
+        <Bubble
+          {...props}
+          renderCustomView={renderReplyMessageView}
+          onLongPress={() => {
+            console.log('bubble is long pressed', props.currentMessage._id);
 
-        onLongPress={() => {console.log('bubble is long pressed',props.currentMessage._id);
-
-
-        if (isAdmin) {
-               showDialog(props.currentMessage._id);
-             }
-            }}
-      
-        wrapperStyle={{
-          left: styles.leftBubble,
-          right: styles.rightBubble,
-        }}
-        usernameStyle={{color: 'blue'}}
-        textStyle={{
-          left: styles.leftBubbleText,
-          right: styles.rightBubbleText,
-        }}
-        renderTime={props => <CustomTime {...props} />}
-      />
+            if (isAdmin) {
+              showDialog(props.currentMessage._id);
+            }
+          }}
+          wrapperStyle={{
+            left: styles.leftBubble,
+            right: styles.rightBubble,
+          }}
+          usernameStyle={{color: 'blue'}}
+          textStyle={{
+            left: styles.leftBubbleText,
+            right: styles.rightBubbleText,
+          }}
+          renderTime={props => <CustomTime {...props} />}
+        />
+      </View>
     );
   };
 
@@ -257,14 +278,52 @@ const clearReplyMessage = () => {
 
   const actionsWidth = animation.interpolate({
     inputRange: [0, 1],
-    outputRange: [0, 70], // Adjust this value based on your CustomActions height
+    outputRange: [0, 70], // Adjust this value based on your CustomActions  width
   });
 
-  const renderMessageBox = (props : MessageProps<IMessage>) => (
-    <ChatMessagebox {...props} setReplyOnSwipeOpen={setReplyMessage} />
+  const renderMessageBox = (props: MessageProps<MyMessage>) => (
+    <ChatMessagebox
+      CustomBubble={CustomBubble}
+      {...props}
+      setReplyOnSwipeOpen={setReplyMessage}
+      updateRowRef={updateRowRef}
+    />
   );
 
+  const updateRowRef = useCallback(
+    (ref: any) => {
+      if (
+        ref &&
+        replyMessage &&
+        ref.props.children.props.currentMessage?._id === replyMessage._id
+      ) {
+        swipeableRowRef.current = ref;
+      }
+    },
+    [replyMessage],
+  );
 
+  useEffect(() => {
+    if (replyMessage && swipeableRowRef.current) {
+      swipeableRowRef.current.close();
+      swipeableRowRef.current = null;
+    }
+  }, [replyMessage]);
+
+  const renderReplyMessageView = (props: BubbleProps<MyMessage>) =>
+    props.currentMessage &&
+    props.currentMessage.replyMessage && (
+      <View style={styles.replyMessageContainer}>
+        <Text>{props.currentMessage.replyMessage.text}</Text>
+        <View style={styles.replyMessageDivider} />
+      </View>
+    );
+
+  const ScrollToBottomButton = () => (
+    <View style={styles.ScrollButton}>
+      <MaterialCommunityIcons name="chevron-down" size={24} color="#fff" />
+    </View>
+  );
 
   return loading ? (
     <ActivityIndicator size="large" color="#000" />
@@ -275,10 +334,12 @@ const clearReplyMessage = () => {
         <GiftedChat
           messages={messages}
           alwaysShowSend={true}
-          onPress={(_,message) => setReplyMessage(message)}
+          scrollToBottom={true}
+          scrollToBottomComponent={ScrollToBottomButton}
+          // onPress={(_, message) => setReplyMessage(message)}
           messagesContainerStyle={{backgroundColor: '#f6f5f1', flex: 1}}
           renderUsernameOnMessage={true}
-          renderBubble={props => <CustomBubble {...props} />}
+          // renderBubble={props => <CustomBubble {...props} />}
           renderDay={props => <CustomDay {...props} />}
           renderInputToolbar={props =>
             isAdmin ? (
@@ -296,56 +357,58 @@ const clearReplyMessage = () => {
                   width: '100%',
                   // backgroundColor: 'darkgreen',
                   // position:"relative",
-                  flexDirection:'column-reverse',
+                  flexDirection: 'column-reverse',
                   padding: 5,
                 }}
-                accessoryStyle={{height:'auto'}}
-                renderActions={() =>
-
-                  (
-                 <View style={{ flexDirection: 'row', alignItems: 'center', }}>
-              <Pressable
-               onPress={() => toggleActions() }
-              style={{
-                height: 44,
-                justifyContent: 'center',
-                alignItems: 'center',
-                marginLeft: 10,
-                zIndex:10,
-              }}>
-                <MaterialCommunityIcons
-                  name="plus" size={28} color="#bcc4ff" />
-              </Pressable>
-              <Animated.View style={[ { width: actionsWidth }]}>
-              {showActions && <CustomActions onSend={onSend} />}
-              </Animated.View>
-            </View>
-                  )
-                }
-
+                accessoryStyle={{height: 'auto'}}
+                renderActions={() => (
+                  <View style={{flexDirection: 'row', alignItems: 'center'}}>
+                    <Pressable
+                      onPress={() => toggleActions()}
+                      style={styles.ActionPlus}>
+                      <MaterialCommunityIcons
+                        name="plus"
+                        size={28}
+                        color="#bcc4ff"
+                      />
+                    </Pressable>
+                    <Animated.View style={[{width: actionsWidth}]}>
+                      {showActions && <CustomActions onSend={onSend} />}
+                    </Animated.View>
+                  </View>
+                )}
                 renderSend={() => {
                   return (
-                    <View style={{ justifyContent: 'center',
-                      alignItems: 'center',
-                      marginRight: 15,
-                      }} >
-                      {props.text.length > 0  && <Send
-                        {...props}
-                        containerStyle={
-                          // eslint-disable-next-line react-native/no-inline-styles
-                          {
-                            justifyContent: 'center',
-                            alignItems: 'center',
-                          }
-                        }
-                        >
-                        <FontAwesome name="send" size={24} color="#bcc4ff" />
-                      </Send>
-                    }
-                    {props.text?.length === 0 && <FontAwesome
-                      style={{marginBottom:10}}
-                            onLongPress={() => {console.log('mic clicked');}}
-                            name="microphone" size={24} color="#bcc4ff" />}
+                    <View
+                      style={{
+                        justifyContent: 'center',
+                        alignItems: 'center',
+                        marginRight: 15,
+                      }}>
+                      {props.text.length > 0 && (
+                        <Send
+                          {...props}
+                          containerStyle={
+                            // eslint-disable-next-line react-native/no-inline-styles
+                            {
+                              justifyContent: 'center',
+                              alignItems: 'center',
+                            }
+                          }>
+                          <FontAwesome name="send" size={24} color="#bcc4ff" />
+                        </Send>
+                      )}
+                      {props.text?.length === 0 && (
+                        <FontAwesome
+                          style={{marginBottom: 10}}
+                          onPress={() => {
+                            console.log('mic clicked');
+                          }}
+                          name="microphone"
+                          size={24}
+                          color="#bcc4ff"
+                        />
+                      )}
                     </View>
                   );
                 }}
@@ -356,19 +419,23 @@ const clearReplyMessage = () => {
               </Text>
             )
           }
-
           textInputProps={styles.composer}
-
           onSend={messages => onSend(messages)}
-
-          renderAccessory={() => replyMessage && ( <ReplyMessageBar clearReply={clearReplyMessage} message={replyMessage} />)}
-           renderMessage={renderMessageBox}
+          renderAccessory={() =>
+            replyMessage && (
+              <ReplyMessageBar
+                clearReply={clearReplyMessage}
+                message={replyMessage}
+              />
+            )
+          }
+          renderMessage={renderMessageBox}
+          // renderCustomView={renderReplyMessageView}
           user={{
             _id: firebaseUser?.uid,
             name: firebaseUser?.displayName || userName,
           }}
         />
-
 
         <DialogBox
           message_id={selectedMessageId}
@@ -434,7 +501,28 @@ const styles = StyleSheet.create({
     // backgroundColor: 'red',
     marginHorizontal: 10,
   },
+
+  replyMessageContainer: {
+    padding: 8,
+    paddingBottom: 0,
+  },
+  replyMessageDivider: {
+    borderBottomWidth: 1,
+    borderBottomColor: 'lightgrey',
+    paddingTop: 6,
+  },
+  ScrollButton: {
+    backgroundColor: '#7081ff',
+    borderRadius: 20,
+    padding: 5,
+  },
+  ActionPlus: {
+    height: 44,
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginLeft: 10,
+    zIndex: 10,
+  },
 });
 
 export default ChatScreen;
-

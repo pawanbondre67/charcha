@@ -4,32 +4,34 @@ import { Pressable, StyleSheet, View } from 'react-native';
 import { IMessage,Message,MessageProps } from 'react-native-gifted-chat';
 import MaterialCommunityIcons from 'react-native-vector-icons/MaterialCommunityIcons';
 
-import ReanimatedSwipeable from 'react-native-gesture-handler/ReanimatedSwipeable';
-import Reanimated, { SharedValue } from 'react-native-reanimated';
+// import ReanimatedSwipeable from 'react-native-gesture-handler/ReanimatedSwipeable';
+import Reanimated from 'react-native-reanimated';
 
 import { isSameDay,isSameUser } from 'react-native-gifted-chat';
+import {Swipeable} from 'react-native-gesture-handler';
 
-type ChatMessageboxProps = {
-  setReplyOnSwipeOpen : (message : IMessage) => void;
-  updateRowRef : (ref : any) => void;
-  } & MessageProps<IMessage>;
+type ChatMessageBoxProps = {
+  setReplyOnSwipeOpen: (message: IMessage) => void;
+  updateRowRef: (ref: any) => void;
+  CustomBubble: any;
+} & MessageProps<IMessage>;
 
-const ChatMessagebox = ({setReplyOnSwipeOpen, updateRowRef, ...props } : ChatMessageboxProps) => {
+const ChatMessagebox = ({setReplyOnSwipeOpen, updateRowRef, CustomBubble, ...props } : ChatMessageBoxProps) => {
 
-  const isNextMyMessage = props.currentMessage &&
+  const isNextMyMessage =   props.currentMessage &&
   props.nextMessage &&
   isSameUser(props.currentMessage, props.nextMessage) &&
   isSameDay(props.currentMessage, props.nextMessage);
 
 
-  const renderRightAction = ( prog: SharedValue<number>) =>{
+  const renderRightAction = ( ) =>{
     // const scale = interpolate(prog.value, [0, 1 , 100], [0, 1 ,1]);
     // const transX = interpolate(prog.value, [0, 1 ,2], [0, -12,-20]);
     // {transform: [{scale : scale} , {translateX : transX}]} , {borderWidth:1}
     return (
-     <Reanimated.View 
-     style={[styles.container , 
-          isNextMyMessage 
+     <Reanimated.View
+     style={[styles.container ,
+          isNextMyMessage
           ? styles.defaultBottomOffset
           : styles.defaultOffsetNext,
           props.position  === 'right' && styles.leftOffsetValue,
@@ -42,27 +44,28 @@ const ChatMessagebox = ({setReplyOnSwipeOpen, updateRowRef, ...props } : ChatMes
      </Reanimated.View>
     );
   };
-
-  const onSwipeOpenAction =()=>{
-    console.log('swipe open');
-    if(props.currentMessage){
-      setReplyOnSwipeOpen({...props.currentMessage});
+  const onSwipeOpenAction = () => {
+    if (props.currentMessage) {
+      // console.log('swipe open' , props.currentMessage);
+      setReplyOnSwipeOpen({ ...props.currentMessage });
     }
-  }
-  return  (
-  <ReanimatedSwipeable
-  ref={updateRowRef}
-  friction={2}
-  leftThreshold={40}
-  renderRightActions={renderRightAction}
-  onSwipeableOpen={onSwipeOpenAction}
-  >
+  };
 
-    <Message {...props} />
-  </ReanimatedSwipeable>);
+  return (
+      <Swipeable
+        ref={updateRowRef}
+        friction={2}
+        rightThreshold={40}
+        renderRightActions={renderRightAction}
+        onSwipeableOpen={onSwipeOpenAction}
+      >
+       {
+       props.currentMessage ? <Message renderBubble={CustomBubble} {...props} /> : null}
+      </Swipeable>
+
+  );
 };
-
-const styles= StyleSheet.create({
+const styles = StyleSheet.create({
   container:{
     width: 40,
   },
@@ -80,6 +83,6 @@ const styles= StyleSheet.create({
   leftOffsetValue:{
     marginLeft: 16,
   },
-})
+});
 
 export default ChatMessagebox;

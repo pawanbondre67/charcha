@@ -9,7 +9,12 @@ import MaterialCommunityIcons from 'react-native-vector-icons/MaterialCommunityI
 
 type ReplyMessageBarProps = {
   clearReply: () => void;
-  message: {text: string};
+  message: {
+    text: string,
+  user: {
+    _id: string | number,
+    name: string,
+  }};
 };
 
 const ReplyMessageBar = ({clearReply, message}: ReplyMessageBarProps) => {
@@ -18,7 +23,7 @@ const ReplyMessageBar = ({clearReply, message}: ReplyMessageBarProps) => {
      <View style={styles.userContainer}>
 
      <View style={styles.replyUserNameContainer}>
-        <Text>user</Text>
+        <Text>{message?.user?.name}</Text>
       </View>
 
       <TouchableOpacity style={styles.crossButton} onPress={clearReply}>
@@ -27,7 +32,7 @@ const ReplyMessageBar = ({clearReply, message}: ReplyMessageBarProps) => {
       
      </View>
      <View style={styles.messageContainer}>
-        <Text>{message.text}</Text>
+        <Text>{message?.text.length > 10 ? message?.text.substring(0,10) + '...' : message.text}</Text>
       </View>
 
       
