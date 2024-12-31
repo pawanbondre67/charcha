@@ -8,6 +8,7 @@ import React, {
 import {
   ActivityIndicator,
   Animated,
+  FlatList,
   Pressable,
   StyleSheet,
   Text,
@@ -39,6 +40,7 @@ import CustomActions from '../../components/CustomActions';
 import ReplyMessageBar from '../../components/ReplyMessageBar';
 import ChatMessagebox from '../../components/ChatMessageBox';
 import Swipeable from 'react-native-gesture-handler/Swipeable';
+import { Easing } from 'react-native-reanimated';
 
 const uuidv4 = () => {
   return 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, c => {
@@ -50,7 +52,9 @@ const uuidv4 = () => {
 
 type MyMessage = IMessage & {
   replyMessage?: {
+     _id?: string;
     text: string;
+    user?: any;
   };
 };
 
@@ -70,6 +74,9 @@ const ChatScreen = () => {
   const [messages, setMessages] = useState<MyMessage[]>([]);
   const [showActions, setShowActions] = useState(false);
   const [replyMessage, setReplyMessage] = useState<MyMessage | null>(null);
+//   const [messageId, setMessageId] = useState<
+//   string | number | null
+// >(null);
   const animation = useRef(new Animated.Value(0)).current;
   const swipeableRowRef = useRef<Swipeable | null>(null);
 
@@ -163,6 +170,7 @@ const ChatScreen = () => {
             createdAt: new Date(doc.data().createdAt.seconds * 1000),
             text: doc.data().text,
             user: doc.data().user,
+            replyMessage: doc.data().replyMessage || null,
             seenBy: doc.data().seenBy || [],
             // Add this line to include the 'seenBy' property
           };
@@ -197,6 +205,8 @@ const ChatScreen = () => {
           text: replyMessage.text,
         };
       }
+      console.log("replyMesssage before sending", replyMessage);
+      
       setMessages(newMessages => GiftedChat.append(newMessages, messages));
       const {text, createdAt, user} = messages[0];
       console.log('user', createdAt);
@@ -210,24 +220,41 @@ const ChatScreen = () => {
           createdAt: firestore.Timestamp.fromDate(new Date()),
           user,
           seenBy: [],
+          replyMessage: replyMessage ? replyMessage : null,
         });
       // console.log("isAdmin updated to:", isAdmin);
-      setReplyMessage(null);
+       clearReplyMessage();
+      // setReplyMessage(null);
+
+       console.log("replyMesssage after sending", replyMessage);
+       console.log('messages', messages);
     },
     [replyMessage],
   );
+
+
 
   // eslint-disable-next-line react/no-unstable-nested-components
   const CustomBubble = props => {
     return (
       <View>
-        {/* {renderReplyMessageView(props)} */}
+     
         <Bubble
           {...props}
           renderCustomView={renderReplyMessageView}
-          onLongPress={() => {
-            console.log('bubble is long pressed', props.currentMessage._id);
+          onPress={() => {
+            const replyMessageId = props.currentMessage.replyMessage?._id;
+            if (replyMessageId) {
+              scrollToMessage(replyMessageId);
+              console.log('scrolling to message ', replyMessageId);
+            }
+            else
+            {
+              console.log('no reply message');
+            }
+          }}
 
+          onLongPress={() => {
             if (isAdmin) {
               showDialog(props.currentMessage._id);
             }
@@ -313,9 +340,18 @@ const ChatScreen = () => {
   const renderReplyMessageView = (props: BubbleProps<MyMessage>) =>
     props.currentMessage &&
     props.currentMessage.replyMessage && (
-      <View style={styles.replyMessageContainer}>
-        <Text>{props.currentMessage.replyMessage.text}</Text>
-        <View style={styles.replyMessageDivider} />
+     
+        <View style={styles.container}>
+     <View style={styles.userContainer}>
+      <View style={styles.replyUserNameContainer}>
+          <Text>{props.currentMessage.replyMessage?.user?.name}</Text>
+        </View>
+     </View>
+
+     <View style={styles.messageContainer}>
+        <Text style={styles.repliedmessageColor}>{props.currentMessage.replyMessage?.text?.length > 30 ? props.currentMessage.replyMessage?.text.substring(0,30) + '...' : props.currentMessage.replyMessage?.text}</Text>
+      </View>
+
       </View>
     );
 
@@ -325,6 +361,33 @@ const ChatScreen = () => {
     </View>
   );
 
+
+
+  // useEffect(() => {
+  //   if (messageId) {
+  //     console.log('scrolling to message:', messageId);
+  //     scrollToMessage(messageId);
+  //   }
+  // }, [messageId]);
+
+  const messageContainerRef = useRef<FlatList<any>>(null);
+  const scrollY = useRef(new Animated.Value(0)).current;
+
+  const scrollToMessage = (messageId) => {
+    const index = messages.findIndex((msg) => msg._id === messageId);
+    if (index !== -1 && messageContainerRef.current) {
+      console.log('animation to message:', messageId);
+      Animated.timing(scrollY, {
+        toValue: index * 100, // Assuming each message has a height of 100
+        easing: Easing.elastic(1),
+        duration: 700,
+        useNativeDriver: true,
+      }).start();
+      console.log('animation after to message:', scrollY);
+      messageContainerRef.current.scrollToIndex({index, animated: true});
+    }
+  };
+
   return loading ? (
     <ActivityIndicator size="large" color="#000" />
   ) : (
@@ -332,6 +395,7 @@ const ChatScreen = () => {
       <View style={{flex: 1}}>
         <Header />
         <GiftedChat
+         messageContainerRef={messageContainerRef}
           messages={messages}
           alwaysShowSend={true}
           scrollToBottom={true}
@@ -430,6 +494,7 @@ const ChatScreen = () => {
             )
           }
           renderMessage={renderMessageBox}
+          
           // renderCustomView={renderReplyMessageView}
           user={{
             _id: firebaseUser?.uid,
@@ -475,6 +540,7 @@ const styles = StyleSheet.create({
   rightBubble: {
     backgroundColor: '#bcc4ff',
     borderRadius: 15,
+    // maxWidth:  '80%',
     padding: 5,
   },
   leftBubbleText: {
@@ -488,11 +554,6 @@ const styles = StyleSheet.create({
     color: '#fff',
     fontSize: 16,
     fontWeight: 'bold',
-  },
-  container: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    marginBottom: 10,
   },
   button: {
     marginHorizontal: 5,
@@ -523,6 +584,32 @@ const styles = StyleSheet.create({
     marginLeft: 10,
     zIndex: 10,
   },
+  container: {
+    borderLeftWidth: 4,
+    borderLeftColor: 'black',
+    backgroundColor: '#D8DDFF',
+    borderRadius: 10,
+
+    paddingHorizontal : 5,
+    height: 'auto',
+},
+userContainer:{
+    paddingVertical: 3,
+},
+replyUserNameContainer: {
+
+},
+messageContainer: {
+  //  width: '100%',
+  paddingBottom: 5,
+},
+repliedmessageColor:{
+  color: 'grey',
+},
+crossButton: {
+
+},
+
 });
 
 export default ChatScreen;

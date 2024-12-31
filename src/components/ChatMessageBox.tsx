@@ -5,10 +5,11 @@ import { IMessage,Message,MessageProps } from 'react-native-gifted-chat';
 import MaterialCommunityIcons from 'react-native-vector-icons/MaterialCommunityIcons';
 
 // import ReanimatedSwipeable from 'react-native-gesture-handler/ReanimatedSwipeable';
-import Reanimated from 'react-native-reanimated';
+import Reanimated, { FadeInRight } from 'react-native-reanimated';
 
 import { isSameDay,isSameUser } from 'react-native-gifted-chat';
 import {Swipeable} from 'react-native-gesture-handler';
+import Animated from 'react-native-reanimated';
 
 type ChatMessageBoxProps = {
   setReplyOnSwipeOpen: (message: IMessage) => void;
@@ -29,7 +30,8 @@ const ChatMessagebox = ({setReplyOnSwipeOpen, updateRowRef, CustomBubble, ...pro
     // const transX = interpolate(prog.value, [0, 1 ,2], [0, -12,-20]);
     // {transform: [{scale : scale} , {translateX : transX}]} , {borderWidth:1}
     return (
-     <Reanimated.View
+     <Animated.View
+
      style={[styles.container ,
           isNextMyMessage
           ? styles.defaultBottomOffset
@@ -41,7 +43,7 @@ const ChatMessagebox = ({setReplyOnSwipeOpen, updateRowRef, CustomBubble, ...pro
           <MaterialCommunityIcons name="reply" size={28} color="darkgrey" />
         </Pressable>
       </View>
-     </Reanimated.View>
+     </Animated.View>
     );
   };
   const onSwipeOpenAction = () => {
@@ -57,6 +59,7 @@ const ChatMessagebox = ({setReplyOnSwipeOpen, updateRowRef, CustomBubble, ...pro
         friction={2}
         rightThreshold={40}
         renderRightActions={renderRightAction}
+        renderLeftActions={renderRightAction}
         onSwipeableOpen={onSwipeOpenAction}
       >
        {
