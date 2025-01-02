@@ -13,6 +13,8 @@ import firestore from '@react-native-firebase/firestore';
 import auth from '@react-native-firebase/auth';
 import {useNavigation} from '@react-navigation/native';
 import MaterialCommunityIcons from 'react-native-vector-icons/MaterialCommunityIcons';
+import AsyncStorage from '@react-native-async-storage/async-storage';
+import messaging from '@react-native-firebase/messaging';
 
 const RegisterScreen = () => {
   const [userName, setUserName] = useState('');
@@ -23,6 +25,10 @@ const RegisterScreen = () => {
   const [passwordError, setPasswordError] = useState('');
   const navigation = useNavigation();
   const [passwordVisible, setPasswordVisible] = useState(false);
+
+
+
+
   const validateEmail = email => {
     const re = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
     return re.test(email);
@@ -63,7 +69,11 @@ const RegisterScreen = () => {
           email,
           password,
         );
+        const UserToken = await messaging().getToken();
         console.log('User created!', credentials.user?.uid);
+        const user = { email, password };
+        await AsyncStorage.setItem('user', JSON.stringify(user));
+
         await firestore()
           .collection('users')
           .doc(credentials.user?.uid)
@@ -72,11 +82,16 @@ const RegisterScreen = () => {
             email: email,
             role: password === '123456' ? 'admin' : 'user',
             id: credentials.user?.uid,
+            FCMtoken: UserToken,
             secret_code: password,
-          })
+          },{ merge: true })
           .then(() => {
             console.log('User added!');
           });
+          
+     
+
+
 
         navigation.navigate('chat');
         console.log('User created and signed in!');

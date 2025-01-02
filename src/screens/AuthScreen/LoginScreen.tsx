@@ -1,4 +1,4 @@
-import React, {useState} from 'react';
+import React, {useEffect, useState} from 'react';
 import {
   View,
   TextInput,
@@ -12,6 +12,7 @@ import auth from '@react-native-firebase/auth';
 import {useNavigation} from '@react-navigation/native';
 import MaterialCommunityIcons from 'react-native-vector-icons/MaterialCommunityIcons';
 import {ActivityIndicator} from 'react-native-paper';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 
 const LoginScreen = () => {
   const [email, setEmail] = useState('pawanbondre19@gmail.com');
@@ -22,6 +23,23 @@ const LoginScreen = () => {
   const [passwordVisible, setPasswordVisible] = useState(false);
 
   const navigation = useNavigation();
+  useEffect(() => {
+    const checkUserLoggedIn = async () => {
+      try {
+        const user = await AsyncStorage.getItem('user');
+        if (user) {
+                     // await auth().signInWithEmailAndPassword(email, password);
+       console.log('user is present' , user);
+          navigation.replace('chat');
+        }
+      } catch (error) {
+        console.log('Error checking user login status:', error);
+      }
+    };
+
+    checkUserLoggedIn();
+  }, [navigation]);
+
 
   const validateEmail = email => {
     const re = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
@@ -55,6 +73,9 @@ const LoginScreen = () => {
     if (valid) {
       try {
         await auth().signInWithEmailAndPassword(email, password);
+        const user = { email, password };
+        await AsyncStorage.setItem('user', JSON.stringify(user));
+        console.log('user is logde in' , user);
         setLoading(false); // Stop loading spinner
         navigation.replace('chat');
       } catch (error) {

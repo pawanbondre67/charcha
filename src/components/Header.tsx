@@ -3,6 +3,7 @@ import React, { useState } from 'react';
 import MaterialCommunityIcons from 'react-native-vector-icons/MaterialCommunityIcons';
 import { useNavigation } from '@react-navigation/native';
 import auth from '@react-native-firebase/auth';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 const Header = () => {
 
     const [signoutLoading, setSignoutLoading] = useState(false);
@@ -12,7 +13,9 @@ const Header = () => {
         console.log('Sign-out button clicked');
         setSignoutLoading(true);
         try {
+          await AsyncStorage.removeItem('user');
           await auth().signOut();
+
           console.log('User signed out!');
           navigation.replace('login');
         } catch (error) {
