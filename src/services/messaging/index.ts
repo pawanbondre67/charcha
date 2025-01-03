@@ -12,7 +12,7 @@ const sendNotification = async (token, message) => {
 
   const headers = {
     'Content-Type': 'application/json',
-    Authorization: 'ya29.a0ARW5m74IJ3ny5q9-XknDg0Guwbu67jrJTNRGlVWSRSpsHCBwGODbGZVTBRnq4cuNOjjK7kMYbipm7aDyZH-J5av_fPlIlOtbGugZNE2qMck2cjoiVNOZ1jMFpfjEr2n14LD1c0IWnQPOQQUpaRYunX2pzFgppFpsHPg2c9sNaCgYKAU4SARESFQHGX2MirEeWBrUFFpYlm9QyPBncHQ0175',
+    'Authorization': 'ya29.a0ARW5m74IJ3ny5q9-XknDg0Guwbu67jrJTNRGlVWSRSpsHCBwGODbGZVTBRnq4cuNOjjK7kMYbipm7aDyZH-J5av_fPlIlOtbGugZNE2qMck2cjoiVNOZ1jMFpfjEr2n14LD1c0IWnQPOQQUpaRYunX2pzFgppFpsHPg2c9sNaCgYKAU4SARESFQHGX2MirEeWBrUFFpYlm9QyPBncHQ0175',
   };
 
   await axios.post(

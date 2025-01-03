@@ -41,6 +41,7 @@ import ReplyMessageBar from '../../components/ReplyMessageBar';
 import ChatMessagebox from '../../components/ChatMessageBox';
 import Swipeable from 'react-native-gesture-handler/Swipeable';
 import { Easing } from 'react-native-reanimated';
+import sendNotification from '../../services/messaging';
 
 const uuidv4 = () => {
   return 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, c => {
@@ -224,7 +225,19 @@ const ChatScreen = () => {
         });
       // console.log("isAdmin updated to:", isAdmin);
        clearReplyMessage();
-      // setReplyMessage(null);
+       
+        //get all user tokens
+        const  usersSnapshot = firestore().collection('users').get();
+        usersSnapshot.then((querySnapshot) => {
+         querySnapshot.forEach((doc) => {
+           // console.log(doc.id, ' => ', doc.data());
+           const user = doc.data();
+           console.log('user token:',user.name , user.FCMtoken);
+           sendNotification(user.FCMtoken, messages[0]);
+         });
+         });
+
+
 
        console.log("replyMesssage after sending", replyMessage);
        console.log('messages', messages);
