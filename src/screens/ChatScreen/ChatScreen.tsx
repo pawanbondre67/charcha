@@ -41,8 +41,12 @@ import ReplyMessageBar from '../../components/ReplyMessageBar';
 import ChatMessagebox from '../../components/ChatMessageBox';
 import Swipeable from 'react-native-gesture-handler/Swipeable';
 import { Easing } from 'react-native-reanimated';
+<<<<<<< HEAD
 import { sendMessageforNotification } from '../../services/api/sendMessageforNotification';
 // import sendNotification from '../../services/messaging';
+=======
+import sendNotification from '../../services/messaging';
+>>>>>>> 2b84709c4d3d2d12fd391c42f04f5634016c80cc
 
 const uuidv4 = () => {
   return 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, c => {
@@ -233,10 +237,20 @@ const ChatScreen = () => {
          querySnapshot.forEach((doc) => {
            // console.log(doc.id, ' => ', doc.data());
            const user = doc.data();
+<<<<<<< HEAD
            console.log('user token:',user.name , messages[0]);
            sendMessageforNotification(user.FCMtoken, messages[0]);
          });
          });
+=======
+           console.log('user token:',user.name , user.FCMtoken);
+           sendNotification(user.FCMtoken, messages[0]);
+         });
+         });
+
+
+
+>>>>>>> 2b84709c4d3d2d12fd391c42f04f5634016c80cc
        console.log("replyMesssage after sending", replyMessage);
        console.log('messages', messages);
     },
