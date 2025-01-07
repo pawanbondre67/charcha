@@ -35,22 +35,16 @@ import {Provider} from 'react-native-paper';
 import FontAwesome from 'react-native-vector-icons/FontAwesome';
 
 import Header from '../../components/Header';
-import {useNavigation} from '@react-navigation/native';
+// import {useNavigation} from '@react-navigation/native';
 import CustomActions from '../../components/CustomActions';
 import ReplyMessageBar from '../../components/ReplyMessageBar';
 import ChatMessagebox from '../../components/ChatMessageBox';
 import Swipeable from 'react-native-gesture-handler/Swipeable';
 import { Easing } from 'react-native-reanimated';
 import { sendMessageforNotification } from '../../services/api/sendMessageforNotification';
-// import sendNotification from '../../services/messaging';
+// import uuidv4 from '../../utils/helper';
+import saveMessage from '../../services/firebaseData/index';
 
-const uuidv4 = () => {
-  return 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, c => {
-    const r = Math.floor(Math.random() * 16);
-    const v = c === 'x' ? r : (r % 4) + 8;
-    return v.toString(16);
-  });
-};
 
 type MyMessage = IMessage & {
   replyMessage?: {
@@ -64,7 +58,7 @@ const ChatScreen = () => {
   const groupId = '1234567';
 
   const firebaseUser = useFirebaseUser().firebaseUser;
-  const navigation = useNavigation();
+  // const navigation = useNavigation();
   const [loading, setLoading] = useState(false);
 
   const [isAdmin, setIsAdmin] = useState(false);
@@ -86,42 +80,12 @@ const ChatScreen = () => {
     setReplyMessage(null);
   };
 
-  // useEffect(() => {
-  //   navigation.setOptions({
-  //     // eslint-disable-next-line react/no-unstable-nested-components
-  //     headerTitle: () => (
-  //       <View>
-  //         <Text
-  //           // eslint-disable-next-line react-native/no-inline-styles
-  //           style={{
-  //             color: '#fff',
-  //             fontSize: 20,
-  //             fontWeight: 'bold',
-  //           }}>
-  //           Chat Screen
-  //         </Text>
-  //       </View>
-  //     ),
-  //     // eslint-disable-next-line react/no-unstable-nested-components
-  //     headerRight: () =>
-  //       signoutLoading ? (
-  //         <ActivityIndicator size="small" color="#fff" />
-  //       ) : (
-  //         <TouchableOpacity onPress={onSignOut}>
-  //           <MaterialCommunityIcons name="logout" size={28} color="white" />
-  //         </TouchableOpacity>
-  //       ),
-  //     headerStyle: {
-  //       backgroundColor: '#bcc4ff',
-  //     },
-  //     headerTintColor: '#fff',
-  //   });
-  // }, [signoutLoading]);
-
   useEffect(() => {
     if (!firebaseUser) {
       return;
     }
+
+   
     const fetchUserRole = async () => {
       setLoading(true);
       console.log('firebaseUser', firebaseUser?.uid);
@@ -129,6 +93,7 @@ const ChatScreen = () => {
         .collection('users')
         .doc(firebaseUser?.uid)
         .get();
+
 
       if (userDoc.exists) {
         const userData = userDoc.data();
@@ -200,6 +165,11 @@ const ChatScreen = () => {
     return () => unsubscribe();
   }, [firebaseUser]);
 
+  // const messageFormInputNotification = ()=>{
+       
+  //   setMessages('');
+  // }
+
   const onSend = useCallback(
     (messages: MyMessage[] = []) => {
       if (replyMessage) {
@@ -210,20 +180,22 @@ const ChatScreen = () => {
       console.log("replyMesssage before sending", replyMessage);
       
       setMessages(newMessages => GiftedChat.append(newMessages, messages));
-      const {text, createdAt, user} = messages[0];
+      const {text, createdAt, user } = messages[0];
+      // const  replyMessage = messages[0].replyMessage;
       console.log('user', createdAt);
-      firestore()
-        .collection('groups')
-        .doc(groupId)
-        .collection('messages')
-        .add({
-          _id: uuidv4(),
-          text,
-          createdAt: firestore.Timestamp.fromDate(new Date()),
-          user,
-          seenBy: [],
-          replyMessage: replyMessage ? replyMessage : null,
-        });
+      // firestore()
+      //   .collection('groups')
+      //   .doc(groupId)
+      //   .collection('messages')
+      //   .add({
+      //     _id: uuidv4(),
+      //     text,
+      //     createdAt: firestore.Timestamp.fromDate(new Date()),
+      //     user,
+      //     seenBy: [],
+      //     replyMessage: replyMessage ? replyMessage : null,
+      //   });
+      saveMessage({ text, user, replyMessage});
       // console.log("isAdmin updated to:", isAdmin);
        clearReplyMessage();
        
@@ -400,7 +372,7 @@ const ChatScreen = () => {
   };
 
   return loading ? (
-    <ActivityIndicator size="large" color="#000" />
+    <View style={{flex:1}}><ActivityIndicator size="large" color="#000" style={{justifyContent:'center' , alignItems:'center'}} /></View>
   ) : (
     <Provider>
       <View style={{flex: 1}}>

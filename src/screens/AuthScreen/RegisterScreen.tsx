@@ -71,7 +71,7 @@ const RegisterScreen = () => {
         );
         const UserToken = await messaging().getToken();
         console.log('User created!', credentials.user?.uid);
-        const user = { email, password };
+        const user = { email, password , userName , id: credentials.user?.uid};
         await AsyncStorage.setItem('user', JSON.stringify(user));
 
         await firestore()
