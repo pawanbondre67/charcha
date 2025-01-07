@@ -1,57 +1,26 @@
 {
   "project_info": {
-<<<<<<< HEAD
     "project_number": "1077635036872",
     "project_id": "charcha-9ee4d",
     "storage_bucket": "charcha-9ee4d.firebasestorage.app"
-=======
-    "project_number": "970946270674",
-    "project_id": "digitalkissan-c7157",
-    "storage_bucket": "digitalkissan-c7157.firebasestorage.app"
->>>>>>> 2b84709c4d3d2d12fd391c42f04f5634016c80cc
   },
   "client": [
     {
       "client_info": {
-<<<<<<< HEAD
         "mobilesdk_app_id": "1:1077635036872:android:47f29cc9f4a92b7e3217fd",
-=======
-        "mobilesdk_app_id": "1:970946270674:android:ccbd9a22398fda8218640b",
->>>>>>> 2b84709c4d3d2d12fd391c42f04f5634016c80cc
         "android_client_info": {
           "package_name": "com.charcha"
         }
       },
-<<<<<<< HEAD
       "oauth_client": [],
       "api_key": [
         {
           "current_key": "AIzaSyAl4ZUbbQDXVRVF0pQq2CYIEkRqlWEHC1M"
-=======
-      "oauth_client": [
-        {
-          "client_id": "970946270674-98tk1cu8qk383cmjr8qpl55f5u2933nt.apps.googleusercontent.com",
-          "client_type": 3
-        }
-      ],
-      "api_key": [
-        {
-          "current_key": "AIzaSyC9bkZh0uY1av248tj_Ra1xEY6v-MbRSbk"
->>>>>>> 2b84709c4d3d2d12fd391c42f04f5634016c80cc
         }
       ],
       "services": {
         "appinvite_service": {
-<<<<<<< HEAD
           "other_platform_oauth_client": []
-=======
-          "other_platform_oauth_client": [
-            {
-              "client_id": "970946270674-98tk1cu8qk383cmjr8qpl55f5u2933nt.apps.googleusercontent.com",
-              "client_type": 3
-            }
-          ]
->>>>>>> 2b84709c4d3d2d12fd391c42f04f5634016c80cc
         }
       }
     }

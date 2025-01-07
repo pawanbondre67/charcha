@@ -1,4 +1,3 @@
-<<<<<<< HEAD
 import React, {useEffect} from 'react';
 import {PaperProvider} from 'react-native-paper';
 import {SafeAreaProvider} from 'react-native-safe-area-context';
@@ -111,65 +110,16 @@ messaging().onNotificationOpenedApp(async remoteMessage => {
 });
 
   }, []);
-=======
-
-import React, { useEffect } from 'react';
-import { PaperProvider } from 'react-native-paper';
-import { SafeAreaProvider } from 'react-native-safe-area-context';
-import { SafeAreaView } from 'react-native-safe-area-context';
-import { GestureHandlerRootView } from 'react-native-gesture-handler';
-import { StyleSheet } from 'react-native';
-import RootStack from './src';
-import messaging from '@react-native-firebase/messaging';
-
-async function requestUserPermission() {
-  const authStatus = await messaging().requestPermission();
-  const enabled =
-    authStatus === messaging.AuthorizationStatus.AUTHORIZED ||
-    authStatus === messaging.AuthorizationStatus.PROVISIONAL;
-
-  if (enabled) {
-    console.log('Authorization status:', authStatus);
-  }
-}
-
-// async function getToken() {
-//   const token = await messaging().getToken();
-//   console.log('Token: ', token);
-  
-// }
-
-
-
-
-const App = () => {
-
-useEffect(() => {
-  requestUserPermission();
-//  getToken();
-}
-, []);
->>>>>>> 2b84709c4d3d2d12fd391c42f04f5634016c80cc
 
   return (
     <PaperProvider>
       <SafeAreaProvider>
-<<<<<<< HEAD
         <SafeAreaView style={styles.backgroundStyle}>
           <GestureHandlerRootView>
             <RootStack />
           </GestureHandlerRootView>
         </SafeAreaView>
       </SafeAreaProvider>
-=======
-      <SafeAreaView style={styles.backgroundStyle}>
-        <GestureHandlerRootView >
-          <RootStack />
-        </GestureHandlerRootView>
-      </SafeAreaView>
-      </SafeAreaProvider>
-
->>>>>>> 2b84709c4d3d2d12fd391c42f04f5634016c80cc
     </PaperProvider>
   );
 };

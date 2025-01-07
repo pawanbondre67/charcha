@@ -5,10 +5,7 @@
 # Xcode
 #
 build/
-<<<<<<< HEAD
 
-=======
->>>>>>> 2b84709c4d3d2d12fd391c42f04f5634016c80cc
 *.pbxuser
 !default.pbxuser
 *.mode1v3
@@ -29,10 +26,7 @@ DerivedData
 # Android/IntelliJ
 #
 build/
-<<<<<<< HEAD
 src/assets
-=======
->>>>>>> 2b84709c4d3d2d12fd391c42f04f5634016c80cc
 .idea
 .gradle
 local.properties
@@ -41,16 +35,14 @@ local.properties
 .cxx/
 *.keystore
 !debug.keystore
+.env
 
 # node.js
 #
 node_modules/
 npm-debug.log
 yarn-error.log
-<<<<<<< HEAD
 src/assets/
-=======
->>>>>>> 2b84709c4d3d2d12fd391c42f04f5634016c80cc
 
 # fastlane
 #
