@@ -55,8 +55,8 @@ const HomeScreen = () => {
   const onChangeSearch = (query: string) => setSearchQuery(query);
 
   useEffect(() => {
-    const fetchRequests = async () => {
-      console.log('Fetching requests...');
+    const fetchConnections = async () => {
+      console.log('Fetching connections...');
       try {
         const requestsCollection = await firestore()
           .collection('users')
@@ -72,7 +72,7 @@ const HomeScreen = () => {
         console.log('Error fetching requests:', error);
       }
     };
-    const interval = setInterval(fetchRequests, 1000);
+    const interval = setInterval(fetchConnections, 1000);
     return () => clearInterval(interval);
 
   }, [user?.id]);

@@ -94,7 +94,7 @@ const RegisterScreen = () => {
 
 
 
-        navigation.navigate('chat');
+        navigation.replace('home');
         console.log('User created and signed in!');
       } catch (createError) {
         if (createError instanceof Error) {

@@ -7,7 +7,7 @@ import { useAuth } from '../../contextApi/AuthProvider';
 
 const LoginScreen = () => {
 const navigation = useNavigation();
-  const [email, setEmail] = useState('pawanbondre@gmail.com');
+  const [email, setEmail] = useState('balram@gmail.com');
   const [password, setPassword] = useState('123456');
   const [loading, setLoading] = useState(false);
   const [emailError, setEmailError] = useState('');
@@ -51,7 +51,7 @@ const navigation = useNavigation();
       try {
         await login(email, password);
         console.log('user is logged in');
-        navigation.replace('chat'); 
+        navigation.replace('home');
       } catch (error) {
         if(error instanceof Error){
             if ((error as any).code === 'auth/invalid-credential') {

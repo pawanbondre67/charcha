@@ -24,26 +24,52 @@ const RequestScreen = () => {
   const [requests, setRequests] = useState<
     {id: string; name: string; profileImage: string}[]
   >([]);
-  const [sentRequests, setSentRequests] = useState<string[]>([]);
+  const [sentRequests, setSentRequests] = useState<
+  {id: string; name: string; profileImage: string , status : string}[]
+>([]);
+
+// const [isSent , setIsSent] = useState(false);
+// const [isAccpeted , setIsAccepted] = useState(false);
 
   const [isSearchBarVisible, setIsSearchBarVisible] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
   const [allUsers, setAllUsers] = useState<
-    {id: string; name: string; profileImage: string}[]
+    {id: string; name: string; profileImage: string , isSent?: boolean}[]
   >([]);
   const [searchResults, setSearchResults] = useState<
-    {id: string; name: string; profileImage: string}[]
+    {id: string; name: string; profileImage: string , isSent?: boolean; }[]
   >([]);
   const {user} = useAuth();
   useEffect(() => {
     const fetchAllUsers = async () => {
+      console.log('Fetching users...');
       try {
-        const usersCollection = await firestore().collection('users').get();
-        const users = usersCollection.docs.map(doc => ({
-          id: doc.id,
-          ...doc.data(),
-        })) as {id: string; name: string; profileImage: string}[];
-        setAllUsers(users);
+         // Fetch connection user IDs
+         const connectionsSnapshot = await firestore()
+         .collection('users')
+         .doc(user?.id)
+         .collection('connections')
+         .get();
+
+       const connectionUserIds = connectionsSnapshot.docs.map(doc => doc.data().userId);
+      //  setConnectionUserIds(connectionUserIds);
+      console.log('Connection User Ids:', connectionUserIds);
+
+       // Fetch all users excluding the current user and connections
+       const usersCollection = await firestore()
+         .collection('users')
+         .where('id', '!=', user?.id)
+         .get();
+
+       const users = usersCollection.docs
+         .map(doc => ({
+           id: doc.id,
+           ...doc.data(),
+         }))
+         .filter(user => !connectionUserIds.includes(user.id)) as { id: string; name: string; profileImage: string }[];
+
+         console.log('All Users:', users);
+       setAllUsers(users);
       } catch (error) {
         console.log('Error fetching users:', error);
       }
@@ -73,16 +99,29 @@ const RequestScreen = () => {
           .doc(user?.id)
           .collection('sentRequests')
           .get();
-        const sentRequestsList = sentRequestsCollection.docs.map(doc => doc.id);
-        setSentRequests(sentRequestsList);
+
+       // Map the documents to extract the necessary information
+       const sentRequestsList = sentRequestsCollection.docs.map(doc => ({
+          id: doc.id,
+          ...doc.data(),
+        })) as {id: string; name: string; profileImage: string , status : string }[];
+
+    // Update the state with the fetched data
+    setSentRequests(sentRequestsList);
+
+
       } catch (error) {
         console.log('Error fetching sent requests:', error);
       }
     };
 
-    fetchAllUsers();
-    fetchSentRequests();
-    const interval = setInterval(fetchRequests, 4000);
+    // fetchAllUsers();
+    // fetchSentRequests();
+    const interval = setInterval(() => {
+      fetchAllUsers();
+      fetchRequests();
+      fetchSentRequests();
+    }, 300000000);
     return () => clearInterval(interval);
 
     //     const timeout = setTimeout(() => {
@@ -98,13 +137,13 @@ const RequestScreen = () => {
 
     const combinedId = `${user.id}_${requesterId}`;
     try {
-      // Update the status of the request to 'accepted' for the current user
-      await firestore()
-        .collection('users')
-        .doc(user?.id)
-        .collection('requests')
-        .doc(requesterId)
-        .update({status: 'accepted'});
+      // // Update the status of the request to 'accepted' for the current user
+      // await firestore()
+      //   .collection('users')
+      //   .doc(user?.id)
+      //   .collection('requests')
+      //   .doc(requesterId)
+      //   .update({status: 'accepted'});
 
       // Create a connection for the current user
       await firestore()
@@ -113,11 +152,12 @@ const RequestScreen = () => {
         .collection('connections')
         .doc(combinedId)
         .set({
-          status: 'accepted',
           userId: requesterId,
           name: name,
           profileImage: `https://avatar.iran.liara.run/public/boy?username=${name}`,
         });
+
+        console.log('Connection saved for current user:', requesterId, name);
 
       // Create a connection for the requester
       await firestore()
@@ -126,29 +166,60 @@ const RequestScreen = () => {
         .collection('connections')
         .doc(combinedId)
         .set({
-          status: 'accepted',
           userId: user?.id,
           name: user?.name,
           profileImage: `https://avatar.iran.liara.run/public/boy?username=${user?.name}`,
         });
 
+        console.log('Connection saved for requester:', user?.id, user?.name);
+
+        // Update the status of the sent request to 'accepted' for the requester
+
+        await firestore()
+        .collection('users')
+        .doc(requesterId)
+        .collection('sentRequests')
+        .doc(user.id)
+        .update({status: 'accepted'});
+
+        console.log('Request status updated to accepted for :', requesterId);
+
+
+
+      // Create a chatroom for the connection
+        await firestore()
+        .collection('chatrooms')
+        .doc(combinedId)
+        .set({
+          members: [user?.id, requesterId],
+          lastMessage: null,
+          lastMessageTime: null,
+        });
+      
+        console.log('Chatroom created:', combinedId);
+
+        
+
       // Refresh the requests
       // Navigate to the ChatScreen and pass data
       navigation.navigate('home', {
         screen: 'chat',
-        params: {userId: requesterId, userName: name},
+        params: {userId: combinedId, userName: name},
       });
 
-      //  await firestore()
-      //   .collection('users')
-      //   .doc(user.id)
-      //   .collection('requests')
-      //   .doc(requesterId)
-      //   .delete();
+       await firestore()
+        .collection('users')
+        .doc(user.id)
+        .collection('requests')
+        .doc(requesterId)
+        .delete();
 
-      setRequests(prevRequests =>
-        prevRequests.filter(request => request.id !== requesterId),
-      );
+      // Update the state to remove the request from the list
+  setRequests(prevRequests =>
+    prevRequests.filter(request => request.id !== requesterId),
+  );
+
+
     } catch (error) {
       console.log('Error saving connection:', error);
     }
@@ -176,6 +247,8 @@ const RequestScreen = () => {
     } catch (error) {
       console.log('Error rejecting request:', error);
     }
+
+
   };
 
   const confirmReject = (id: string) => {
@@ -209,31 +282,64 @@ const RequestScreen = () => {
     setSearchResults(filteredUsers);
   };
 
-  const handleConnect = async (id: string) => {
+  const handleConnect = async (receiverId: string , receiverName: string) => {
     // Implement connect functionality here
     await firestore()
       .collection('users')
-      .doc(id)
+      .doc(receiverId)
       .collection('requests')
       .doc(user?.id)
       .set({
         id: user?.id,
         name: user?.name,
         profileImage: `https://avatar.iran.liara.run/public/boy?username=${user?.name}`,
-        status: 'pending',
+        isSent: true,
       });
 
     await firestore()
       .collection('users')
       .doc(user?.id)
       .collection('sentRequests')
-      .doc(id)
-      .set({});
+      .doc(receiverId)
+      .set({
+        id: receiverId,
+        name: receiverName,
+        profileImage :`https://avatar.iran.liara.run/public/boy?username=${receiverName}`, 
+        status: 'pending',
+        isSent : true,
+      });
+
+   
 
     // console.log(sendConnection, 'usersCollection');
- setSentRequests([...sentRequests, id]);
-      console.log('Sent connection request to:', id);
+    setSentRequests([...sentRequests, { id: receiverId, name: receiverName, status: 'pending' , profileImage : `https://avatar.iran.liara.run/public/boy?username=${receiverName}` }]);
+        setAllUsers(allUsers.map(user =>
+          user.id === receiverId ? {...user, isSent: true} : user,
+        ));
+
+
+      // setIsSent(true);
+      console.log('Sent connection request to:', receiverId);
   };
+
+
+  const clearSentRequests = () => {
+    setSentRequests([]);
+  };
+
+  const renderSentItem = ({
+    item,
+  }: {
+    item: {id: string; name: string; profileImage: string , status : string};
+  }) => (
+    <SentRequestsCard
+      id={item.id}
+      name={item.name}
+      profileImage={item.profileImage}
+      status={item.status}
+    />
+  );
+
 
   const renderItem = ({
     item,
@@ -252,14 +358,14 @@ const RequestScreen = () => {
   const renderSearchResultItem = ({
     item,
   }: {
-    item: {id: string; name: string; profileImage: string};
+    item: {id: string; name: string; profileImage: string , isSent: boolean};
   }) => (
     <SearchResultCard
       id={item.id}
       name={item.name}
       profileImage={item.profileImage}
-      onConnect={handleConnect}
-      isSent={sentRequests.includes(item.id)}
+      onConnect={() => handleConnect(item.id, item.name)}
+      isSent={item.isSent ?? false}
     />
   );
 
@@ -294,6 +400,20 @@ const RequestScreen = () => {
           <FlatList
             data={requests}
             renderItem={renderItem}
+            keyExtractor={item => item.id}
+            contentContainerStyle={styles.list}
+          />
+          <Text style={[styles.title, {color: Colors.text}]}>
+           Requests Sent
+          </Text>
+          <Button
+            style={{backgroundColor: Colors.cardBackground ,}}
+           onPress={clearSentRequests}>
+            Clear All Request
+           </Button>
+          <FlatList
+            data={sentRequests}
+            renderItem={renderSentItem}
             keyExtractor={item => item.id}
             contentContainerStyle={styles.list}
           />
@@ -351,8 +471,45 @@ const SearchResultCard = ({
   id: string;
   name: string;
   profileImage: string;
-  onConnect: (id: string) => void;
+  onConnect: (id: string , name : string) => void;
   isSent: boolean;
+
+}) => {
+  const {Colors} = useTheme();
+  console.log('isSent:', isSent);
+
+  return (
+    <Card style={[styles.card, {backgroundColor: Colors.background}]}>
+      <Card.Title
+        title={name}
+        left={props => <Avatar.Image {...props} source={{uri: profileImage}} />}
+      />
+      <Card.Actions>
+      <Button
+          style={{ backgroundColor: Colors.primary }}
+          onPress={() => onConnect(id , name)}
+          disabled={isSent}>
+          {isSent ? 'Request Sent' : 'Connect'}
+        </Button>
+      </Card.Actions>
+    </Card>
+  );
+};
+
+
+const SentRequestsCard = ({
+  id,
+  name,
+  profileImage,
+  status
+  // isAccpeted,
+}: {
+  id: string;
+  name: string;
+  profileImage: string;
+  status : string;
+  // isAccpeted: boolean;
+  // onConnect: (id: string , name : string) => void;
 }) => {
   const {Colors} = useTheme();
 
@@ -365,10 +522,10 @@ const SearchResultCard = ({
       <Card.Actions>
       <Button
           style={{ backgroundColor: Colors.primary }}
-          onPress={() => onConnect(id)}
-          disabled={isSent}>
-          {isSent ? 'Request Sent' : 'Connect'}
-        </Button>
+          onPress={() => console.log('Request Sent')}
+          disabled={status === 'accepted'}>
+          {status === 'accepted' ? 'Accepted' : 'Pending'}
+           </Button>
       </Card.Actions>
     </Card>
   );

@@ -1,41 +1,41 @@
-// import {View, Text, Switch} from 'react-native';
-// import React from 'react';
-// import {useTheme} from '../../theme/ThemeProvider';
-
-// const ChatScreen = () => {
-//   console.log(useTheme, 'current theme');
-//   const {Colors, dark, setScheme} = useTheme();
-//   console.log(Colors, 'colors');
-//   console.log(dark, 'dark');
-
-//   const toggleTheme = () => {
-//     setScheme(dark ? 'light' : 'dark');
-//   };
-
-//   return (
-//     <View style={{backgroundColor: Colors.primary}}>
-//       <Switch value={dark} onValueChange={toggleTheme} />
-//       <Text style={{color: Colors.text}}>Navigation</Text>
-//     </View>
-//   );
-// };
-
-// export default ChatScreen;
-
-
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import { View, Text, StyleSheet } from 'react-native';
-import { useRoute } from '@react-navigation/native';
+import { GiftedChat, IMessage } from 'react-native-gifted-chat';
 
-const ChatScreen = () => {
-  const route = useRoute();
-  const { userId, userName } = route.params as { userId: string, userName: string };
+const ChatScreen = ({ route }) => {
+  const { userName, userId } = route.params;
+  const [messages, setMessages] = useState<IMessage[]>([]);
+
+  useEffect(() => {
+    setMessages([
+      {
+        _id: 1,
+        text: 'Hello developer',
+        createdAt: new Date(),
+        user: {
+          _id: 2,
+          name: 'React Native',
+          avatar: 'https://placeimg.com/140/140/any',
+        },
+      },
+    ]);
+  }, []);
+
+  const onSend = (newMessages = []) => {
+    setMessages(GiftedChat.append(messages, newMessages));
+  };
 
   return (
     <View style={styles.container}>
       <Text style={styles.text}>Chat with {userName}</Text>
-      <Text style={styles.text}>User ID: {userId}</Text>
-      {/* Add your chat UI here */}
+      <Text style={styles.text}>Combined ID: {userId}</Text>
+      <GiftedChat
+        messages={messages}
+        onSend={newMessages => onSend(newMessages)}
+        user={{
+          _id: 1,
+        }}
+      />
     </View>
   );
 };
@@ -48,6 +48,7 @@ const styles = StyleSheet.create({
   },
   text: {
     fontSize: 18,
+    marginBottom: 10,
   },
 });
 
